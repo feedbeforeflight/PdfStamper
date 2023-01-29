@@ -1,4 +1,4 @@
-package com.feedbeforeflight;
+package com.feedbeforeflight.PdfStamper;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
