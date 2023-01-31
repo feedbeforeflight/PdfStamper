@@ -4,6 +4,7 @@ import com.feedbeforeflight.PdfStamper.PdfStamper;
 import com.feedbeforeflight.PdfStamper.PdfStamperConfigManager;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,17 +49,30 @@ public class PdfStamperApp
         }
 
         PdfStamper pdfStamper = new PdfStamper();
-        Path configFilePath = PdfStamperConfigManager.findConfigFilePath();
-        if (configFilePath != null) {
-            PdfStamperConfigManager.applyPropertiesFile(configFilePath, pdfStamper);
-        }
-
+        PdfStamperConfigManager.applyPropertiesFile(configFilePath(), pdfStamper);
         try {
             pdfStamper.applyStamp(Files.newInputStream(sourceDocumentPath),
                     Files.newInputStream(stampDocumentPath),
                     Files.newOutputStream(resultDocumentPath));
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
+        }
+    }
+
+    private static Path configFilePath() {
+        try {
+            String jarPathString = Paths.get(PdfStamperApp.class.getProtectionDomain().
+                    getCodeSource().getLocation().toURI()).toString();
+            Path configPath;
+            if (jarPathString.endsWith(".jar")) {
+                configPath = Paths.get(jarPathString.substring(0, jarPathString.length() - 3) + "properties");
+            }
+            else {
+                configPath = Paths.get(jarPathString + "\\PdfStamper.properties");
+            }
+            return Files.exists(configPath) ? configPath : null;
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 
