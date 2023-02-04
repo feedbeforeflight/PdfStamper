@@ -42,11 +42,11 @@ public class PdfStamperApp
             return;
         }
 
-        try {
-            Files.deleteIfExists(resultDocumentPath);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            Files.deleteIfExists(resultDocumentPath);
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
 
         PdfStamper pdfStamper = new PdfStamper();
         PdfStamperConfigManager.applyPropertiesFile(configFilePath(), pdfStamper);
