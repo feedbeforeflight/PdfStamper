@@ -95,7 +95,7 @@ public class PdfStamper {
                 * (renderedLastPageHeight - renderedLastPageContentBottom) / renderedLastPageHeight
                 - stampImageScaledHeight - stampInsertionContentSpacing;
 
-        if ((stampInsertionYCoordinate - stampImageScaledHeight) < 0) {
+        if (stampInsertionYCoordinate < 0) {
             PDPage blankPage = new PDPage(rectangle);
             sourceDocument.addPage(blankPage);
             rectangle = blankPage.getBBox();
