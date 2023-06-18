@@ -1,5 +1,7 @@
 package com.feedbeforeflight.PdfStamper;
 
+import com.feedbeforeflight.PdfStamper.Transform.Point;
+import com.feedbeforeflight.PdfStamper.Transform.Rectangle;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -71,13 +73,14 @@ public class PdfStamper {
         int sourceDocumentLastPageIndex = sourceDocument.getPages().getCount() - 1;
         PDPage sourceDocumentLastPage = sourceDocument.getPage(sourceDocumentLastPageIndex);
 
-        Borders  borders = new Borders(sourceDocumentLastPage.getBBox());
+        Rectangle borders = new Rectangle(sourceDocumentLastPage.getBBox());
 
         PDFRenderer pdfRenderer = new PDFRenderer(sourceDocument);
         BufferedImage bufferedImage = pdfRenderer.renderImageWithDPI(sourceDocumentLastPageIndex, coarseDPI, ImageType.BINARY);
 
         int renderedLastPageHeight = bufferedImage.getHeight();
         int renderedLastPageContentBottom = bottomMargin(bufferedImage, bottomThreshold);
+        float bottomFreeSpacePart = renderedLastPageContentBottom / (float) renderedLastPageHeight;
 
         PDImageXObject stampXImage = getStampImage(sourceDocument, stampDocument, sourceDocumentLastPage);
 
@@ -97,7 +100,7 @@ public class PdfStamper {
             blankPage.setRotation(sourceDocumentLastPage.getRotation());
             sourceDocument.addPage(blankPage);
 
-            borders = new Borders(blankPage.getBBox());
+            borders = new Rectangle(blankPage.getBBox());
             stampInsertionPoint.setY(borders.getTop()
                     - stampImageScaledHeight - stampInsertionContentSpacing);
             sourceDocumentLastPage = blankPage;
@@ -145,35 +148,6 @@ public class PdfStamper {
         }
 
         return bottom;
-    }
-
-    private enum Rotation{
-        ROTATION0,
-        ROTATION90,
-        ROTATION180,
-        ROTATION270
-    }
-
-    @Getter @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    private static class Borders {
-        private float bottom;
-        private float top;
-        private float left;
-        private float right;
-
-        public Borders(PDRectangle rectangle) {
-
-        }
-    }
-
-    @Getter @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    private static class Point {
-        private float x;
-        private float y;
     }
 
     private static BufferedImageMarginCoordinates marginCoordinates(BufferedImage bufferedImage) {
