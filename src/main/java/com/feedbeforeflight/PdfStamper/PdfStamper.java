@@ -9,13 +9,12 @@ import lombok.Setter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.image.JPEGFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.util.Matrix;
 
-import javax.swing.border.Border;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -73,7 +72,7 @@ public class PdfStamper {
         int sourceDocumentLastPageIndex = sourceDocument.getPages().getCount() - 1;
         PDPage sourceDocumentLastPage = sourceDocument.getPage(sourceDocumentLastPageIndex);
 
-        Rectangle borders = new Rectangle(sourceDocumentLastPage.getBBox());
+        Rectangle borders = new Rectangle(sourceDocumentLastPage.getBBox(), sourceDocumentLastPage.getRotation());
 
         PDFRenderer pdfRenderer = new PDFRenderer(sourceDocument);
         BufferedImage bufferedImage = pdfRenderer.renderImageWithDPI(sourceDocumentLastPageIndex, coarseDPI, ImageType.BINARY);
@@ -82,7 +81,7 @@ public class PdfStamper {
         int renderedLastPageContentBottom = bottomMargin(bufferedImage, bottomThreshold);
         float bottomFreeSpacePart = renderedLastPageContentBottom / (float) renderedLastPageHeight;
 
-        PDImageXObject stampXImage = getStampImage(sourceDocument, stampDocument, sourceDocumentLastPage);
+        PDImageXObject stampXImage = makeStampImageFromPdf(sourceDocument, stampDocument, sourceDocumentLastPage);
 
         float scale = stampXImage.getWidth() / (borders.getRight() - stampInsertionMarginWidth * 2);
         float stampImageScaledWidth = stampXImage.getWidth() / scale;
@@ -100,24 +99,41 @@ public class PdfStamper {
             blankPage.setRotation(sourceDocumentLastPage.getRotation());
             sourceDocument.addPage(blankPage);
 
-            borders = new Rectangle(blankPage.getBBox());
+            borders = new Rectangle(blankPage.getBBox(), blankPage.getRotation());
             stampInsertionPoint.setY(borders.getTop()
                     - stampImageScaledHeight - stampInsertionContentSpacing);
             sourceDocumentLastPage = blankPage;
         }
 
-        PDPageContentStream contentStream = new PDPageContentStream(sourceDocument, sourceDocumentLastPage,
-                PDPageContentStream.AppendMode.APPEND, true);
-        contentStream.drawImage(stampXImage, stampInsertionPoint.getX(), stampInsertionPoint.getY(),
-                stampImageScaledWidth, stampImageScaledHeight);
-        contentStream.close();
+        try (PDPageContentStream contentStream = new PDPageContentStream(sourceDocument, sourceDocumentLastPage,
+                PDPageContentStream.AppendMode.APPEND, true)) {
+            if (sourceDocumentLastPage.getRotation() > 0) {
+                contentStream.transform(getMatrix(sourceDocumentLastPage.getRotation(), borders));
+            }
+
+            contentStream.drawImage(stampXImage, stampInsertionPoint.getX(), stampInsertionPoint.getY(),
+                    stampImageScaledWidth, stampImageScaledHeight);
+        }
 
         return sourceDocument;
     }
 
-    private PDImageXObject getStampImage(PDDocument sourceDocument, PDDocument stampDocument, PDPage sourceDocumentLastPage) throws IOException {
-        stampDocument.getPage(0).setRotation(360 - sourceDocumentLastPage.getRotation());
+    private Matrix getMatrix(int rotation, Rectangle borders) {
+        switch (rotation) {
+            case 90 -> {
+                return new Matrix(0, 1, -1, 0, borders.getHeight(), 0);
+            }
+            case 180 -> {
+                return new Matrix(-1, 0, 0, -1, borders.getHeight(), borders.getWidth());
+            }
+            case 270 -> {
+                return new Matrix(0, -1, 1, 0, 0, borders.getWidth());
+            }
+        }
+        return new Matrix(1, 0, 0, 1, 0, 0);
+    }
 
+    private PDImageXObject makeStampImageFromPdf(PDDocument sourceDocument, PDDocument stampDocument, PDPage sourceDocumentLastPage) throws IOException {
         PDFRenderer stampRenderer = new PDFRenderer(stampDocument);
         BufferedImage stampImage = stampRenderer.renderImageWithDPI(0, fineDPI, ImageType.RGB);
 

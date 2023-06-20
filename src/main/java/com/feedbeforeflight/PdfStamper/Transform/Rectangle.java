@@ -17,11 +17,18 @@ public class Rectangle {
     float left;
     float right;
 
-    public Rectangle(PDRectangle rectangle) {
-        top = rectangle.getUpperRightY();
-        bottom = rectangle.getLowerLeftY();
-        left = rectangle.getLowerLeftX();
-        right = rectangle.getUpperRightX();
+    public Rectangle(PDRectangle rectangle, int rotation) {
+        if (rotation == 0) {
+            top = rectangle.getUpperRightY();
+            bottom = rectangle.getLowerLeftY();
+            left = rectangle.getLowerLeftX();
+            right = rectangle.getUpperRightX();
+        } else if (rotation == 270) {
+            top = rectangle.getUpperRightX();
+            bottom = rectangle.getLowerLeftX();
+            left = rectangle.getLowerLeftY();
+            right = rectangle.getUpperRightY();
+        }
     }
 
     public float getWidth() {
