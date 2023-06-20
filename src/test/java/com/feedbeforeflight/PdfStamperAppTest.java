@@ -1,38 +1,11 @@
 package com.feedbeforeflight;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.jupiter.api.Test;
 
-/**
- * Unit test for simple App.
- */
-public class PdfStamperAppTest
-    extends TestCase
-{
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public PdfStamperAppTest(String testName )
-    {
-        super( testName );
-    }
-
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( PdfStamperAppTest.class );
-    }
-
-    /**
-     * Rigourous Test :-)
-     */
+public class PdfStamperAppTest {
+    @Test
     public void testApp()
     {
-        assertTrue( true );
+
     }
 }
