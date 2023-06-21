@@ -23,6 +23,16 @@ public class Rectangle {
             bottom = rectangle.getLowerLeftY();
             left = rectangle.getLowerLeftX();
             right = rectangle.getUpperRightX();
+        } else if (rotation == 90) {
+            top = rectangle.getLowerLeftX();
+            bottom = rectangle.getUpperRightX();
+            left = rectangle.getLowerLeftY();
+            right = rectangle.getUpperRightY();
+        } else if (rotation == 180) {
+            top = rectangle.getLowerLeftY();
+            bottom = rectangle.getUpperRightY();
+            left = rectangle.getUpperRightX();
+            right = rectangle.getLowerLeftX();
         } else if (rotation == 270) {
             top = rectangle.getUpperRightX();
             bottom = rectangle.getLowerLeftX();
