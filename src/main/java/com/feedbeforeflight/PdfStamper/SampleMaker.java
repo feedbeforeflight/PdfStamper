@@ -9,6 +9,7 @@ import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.util.Matrix;
 
+import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,8 +35,8 @@ public class SampleMaker {
 
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
                 Matrix matrix = new Matrix(0, 1, -1, 0, page.getBBox().getUpperRightX(), 0);
-                contentStream.transform(matrix);
                 contentStream.beginText();
+                contentStream.setTextMatrix(matrix);
                 contentStream.setFont(font, 12);
                 contentStream.newLineAtOffset(50, 400);
                 contentStream.showText("This is a bad pdf document landscaped with BBox and rotated 90 degrees");
@@ -59,8 +60,8 @@ public class SampleMaker {
 
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
                 Matrix matrix = new Matrix(-1, 0, 0, -1, page.getBBox().getUpperRightX(), page.getBBox().getUpperRightY());
-                contentStream.transform(matrix);
                 contentStream.beginText();
+                contentStream.setTextMatrix(matrix);
                 contentStream.setFont(font, 12);
                 contentStream.newLineAtOffset(50, 400);
                 contentStream.showText("This is a bad pdf document landscaped with BBox and rotated 180 degrees");
@@ -88,10 +89,13 @@ public class SampleMaker {
 
             PDFont font = PDType1Font.HELVETICA_BOLD;
 
-            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+
+            Matrix originalMatrix = document.getPage(0).getMatrix();
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page,
+                    PDPageContentStream.AppendMode.APPEND, true)) {
                 Matrix matrix = new Matrix(0, -1, 1, 0, 0, page.getBBox().getUpperRightY());
-                contentStream.transform(matrix);
                 contentStream.beginText();
+                contentStream.setTextMatrix(matrix);
                 contentStream.setFont(font, 12);
                 contentStream.newLineAtOffset(50, 400);
                 contentStream.showText("This is a bad pdf document landscaped with BBox and rotated 270 degrees");

@@ -15,6 +15,7 @@ import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.util.Matrix;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -107,9 +108,19 @@ public class PdfStamper {
 
         try (PDPageContentStream contentStream = new PDPageContentStream(sourceDocument, sourceDocumentLastPage,
                 PDPageContentStream.AppendMode.APPEND, true)) {
+//            contentStream.setNonStrokingColor(Color.CYAN);
+//            contentStream.addRect(0, 0, 100, 200);
+//            contentStream.fill();
+
+            System.out.println(sourceDocumentLastPage.getRotation());
+
             if (sourceDocumentLastPage.getRotation() > 0) {
                 contentStream.transform(getMatrix(sourceDocumentLastPage.getRotation(), borders));
             }
+
+            contentStream.setNonStrokingColor(Color.DARK_GRAY);
+            contentStream.addRect(0, 0, 200, 50);
+            contentStream.fill();
 
             contentStream.drawImage(stampXImage, stampInsertionPoint.getX(), stampInsertionPoint.getY(),
                     stampImageScaledWidth, stampImageScaledHeight);
