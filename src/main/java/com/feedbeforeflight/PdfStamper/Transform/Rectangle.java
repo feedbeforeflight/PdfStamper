@@ -24,15 +24,15 @@ public class Rectangle {
             left = rectangle.getLowerLeftX();
             right = rectangle.getUpperRightX();
         } else if (rotation == 90) {
-            top = rectangle.getLowerLeftX();
-            bottom = rectangle.getUpperRightX();
+            top = rectangle.getUpperRightX();
+            bottom = rectangle.getLowerLeftX();
             left = rectangle.getLowerLeftY();
             right = rectangle.getUpperRightY();
         } else if (rotation == 180) {
-            top = rectangle.getLowerLeftY();
-            bottom = rectangle.getUpperRightY();
-            left = rectangle.getUpperRightX();
-            right = rectangle.getLowerLeftX();
+            top = rectangle.getUpperRightY();
+            bottom = rectangle.getLowerLeftY();
+            left = rectangle.getLowerLeftX();
+            right = rectangle.getUpperRightX();
         } else if (rotation == 270) {
             top = rectangle.getUpperRightX();
             bottom = rectangle.getLowerLeftX();

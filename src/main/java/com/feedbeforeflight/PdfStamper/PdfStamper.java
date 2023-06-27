@@ -80,7 +80,6 @@ public class PdfStamper {
 
         int renderedLastPageHeight = bufferedImage.getHeight();
         int renderedLastPageContentBottom = bottomMargin(bufferedImage, bottomThreshold);
-        float bottomFreeSpacePart = renderedLastPageContentBottom / (float) renderedLastPageHeight;
 
         PDImageXObject stampXImage = makeStampImageFromPdf(sourceDocument, stampDocument, sourceDocumentLastPage);
 
@@ -108,19 +107,12 @@ public class PdfStamper {
 
         try (PDPageContentStream contentStream = new PDPageContentStream(sourceDocument, sourceDocumentLastPage,
                 PDPageContentStream.AppendMode.APPEND, true)) {
-//            contentStream.setNonStrokingColor(Color.CYAN);
-//            contentStream.addRect(0, 0, 100, 200);
-//            contentStream.fill();
 
             System.out.println(sourceDocumentLastPage.getRotation());
 
             if (sourceDocumentLastPage.getRotation() > 0) {
                 contentStream.transform(getMatrix(sourceDocumentLastPage.getRotation(), borders));
             }
-
-            contentStream.setNonStrokingColor(Color.DARK_GRAY);
-            contentStream.addRect(0, 0, 200, 50);
-            contentStream.fill();
 
             contentStream.drawImage(stampXImage, stampInsertionPoint.getX(), stampInsertionPoint.getY(),
                     stampImageScaledWidth, stampImageScaledHeight);
@@ -135,7 +127,7 @@ public class PdfStamper {
                 return new Matrix(0, 1, -1, 0, borders.getHeight(), 0);
             }
             case 180 -> {
-                return new Matrix(-1, 0, 0, -1, borders.getHeight(), borders.getWidth());
+                return new Matrix(-1, 0, 0, -1, borders.getWidth(), borders.getHeight());
             }
             case 270 -> {
                 return new Matrix(0, -1, 1, 0, 0, borders.getWidth());
