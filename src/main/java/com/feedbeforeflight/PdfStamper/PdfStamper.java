@@ -1,5 +1,7 @@
 package com.feedbeforeflight.PdfStamper;
 
+import com.feedbeforeflight.PdfStamper.Transform.Point;
+import com.feedbeforeflight.PdfStamper.Transform.Rectangle;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -7,12 +9,13 @@ import lombok.Setter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.image.JPEGFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.util.Matrix;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -70,7 +73,7 @@ public class PdfStamper {
         int sourceDocumentLastPageIndex = sourceDocument.getPages().getCount() - 1;
         PDPage sourceDocumentLastPage = sourceDocument.getPage(sourceDocumentLastPageIndex);
 
-        PDRectangle rectangle = sourceDocumentLastPage.getBBox();
+        Rectangle borders = new Rectangle(sourceDocumentLastPage.getBBox(), sourceDocumentLastPage.getRotation());
 
         PDFRenderer pdfRenderer = new PDFRenderer(sourceDocument);
         BufferedImage bufferedImage = pdfRenderer.renderImageWithDPI(sourceDocumentLastPageIndex, coarseDPI, ImageType.BINARY);
@@ -78,6 +81,62 @@ public class PdfStamper {
         int renderedLastPageHeight = bufferedImage.getHeight();
         int renderedLastPageContentBottom = bottomMargin(bufferedImage, bottomThreshold);
 
+        PDImageXObject stampXImage = makeStampImageFromPdf(sourceDocument, stampDocument, sourceDocumentLastPage);
+
+        float scale = stampXImage.getWidth() / (borders.getRight() - stampInsertionMarginWidth * 2);
+        float stampImageScaledWidth = stampXImage.getWidth() / scale;
+        float stampImageScaledHeight = stampXImage.getHeight() / scale;
+
+        Point stampInsertionPoint = new Point();
+        stampInsertionPoint.setX(stampInsertionMarginWidth);
+
+        stampInsertionPoint.setY(borders.getTop()
+                * (renderedLastPageHeight - renderedLastPageContentBottom) / renderedLastPageHeight
+                - stampImageScaledHeight - stampInsertionContentSpacing);
+
+        if (stampInsertionPoint.getY() < 0) {
+            PDPage blankPage = new PDPage(sourceDocumentLastPage.getBBox());
+            blankPage.setRotation(sourceDocumentLastPage.getRotation());
+            sourceDocument.addPage(blankPage);
+
+            borders = new Rectangle(blankPage.getBBox(), blankPage.getRotation());
+            stampInsertionPoint.setY(borders.getTop()
+                    - stampImageScaledHeight - stampInsertionContentSpacing);
+            sourceDocumentLastPage = blankPage;
+        }
+
+        try (PDPageContentStream contentStream = new PDPageContentStream(sourceDocument, sourceDocumentLastPage,
+                PDPageContentStream.AppendMode.APPEND, true)) {
+
+            System.out.println(sourceDocumentLastPage.getRotation());
+
+            if (sourceDocumentLastPage.getRotation() > 0) {
+                contentStream.transform(getMatrix(sourceDocumentLastPage.getRotation(), borders));
+            }
+
+            contentStream.drawImage(stampXImage, stampInsertionPoint.getX(), stampInsertionPoint.getY(),
+                    stampImageScaledWidth, stampImageScaledHeight);
+        }
+
+        return sourceDocument;
+    }
+
+    private Matrix getMatrix(int rotation, Rectangle borders) {
+        switch (rotation) {
+            case 90 -> {
+                return new Matrix(0, 1, -1, 0, borders.getHeight(), 0);
+            }
+            case 180 -> {
+                return new Matrix(-1, 0, 0, -1, borders.getWidth(), borders.getHeight());
+            }
+            case 270 -> {
+                return new Matrix(0, -1, 1, 0, 0, borders.getWidth());
+            }
+        }
+        return new Matrix(1, 0, 0, 1, 0, 0);
+    }
+
+    private PDImageXObject makeStampImageFromPdf(PDDocument sourceDocument, PDDocument stampDocument, PDPage sourceDocumentLastPage) throws IOException {
         PDFRenderer stampRenderer = new PDFRenderer(stampDocument);
         BufferedImage stampImage = stampRenderer.renderImageWithDPI(0, fineDPI, ImageType.RGB);
 
@@ -85,32 +144,7 @@ public class PdfStamper {
         BufferedImage trimmedStamp = stampImage.getSubimage(stampMargins.left, stampMargins.top,
                 stampMargins.right - stampMargins.left, stampMargins.bottom - stampMargins.top);
 
-        PDImageXObject stampXImage = JPEGFactory.createFromImage(sourceDocument, trimmedStamp);
-
-        float scale = stampXImage.getWidth() / (rectangle.getUpperRightX() - stampInsertionMarginWidth * 2);
-        float stampImageScaledWidth = stampXImage.getWidth() / scale;
-        float stampImageScaledHeight = stampXImage.getHeight() / scale;
-
-        float stampInsertionYCoordinate = rectangle.getUpperRightY()
-                * (renderedLastPageHeight - renderedLastPageContentBottom) / renderedLastPageHeight
-                - stampImageScaledHeight - stampInsertionContentSpacing;
-
-        if (stampInsertionYCoordinate < 0) {
-            PDPage blankPage = new PDPage(rectangle);
-            sourceDocument.addPage(blankPage);
-            rectangle = blankPage.getBBox();
-            stampInsertionYCoordinate = rectangle.getUpperRightY()
-                    - stampImageScaledHeight - stampInsertionContentSpacing;
-            sourceDocumentLastPage = blankPage;
-        }
-
-        PDPageContentStream contentStream = new PDPageContentStream(sourceDocument, sourceDocumentLastPage,
-                PDPageContentStream.AppendMode.APPEND, true);
-        contentStream.drawImage(stampXImage, stampInsertionMarginWidth, stampInsertionYCoordinate,
-                stampImageScaledWidth, stampImageScaledHeight);
-        contentStream.close();
-
-        return sourceDocument;
+        return JPEGFactory.createFromImage(sourceDocument, trimmedStamp);
     }
 
     private static int bottomMargin(BufferedImage bufferedImage, int bottomThreshold) {
